@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/mkozhukh/jstore"
+	jstore "github.com/mkozhukh/jstore/store"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -24,21 +24,21 @@ func (suite *StoreTestSuite) TestCollection() {
 	col, err := jstore.NewCollection("./test.data.json")
 	suite.Error(err)
 
-	item := jstore.Item{}
+	item := jstore.DataItem{}
 	err = col.Save(&item)
 	suite.Nil(err)
 	suite.NotEqual("", item.ID)
 
-	err = col.Save(&jstore.Item{ ID:"1234"})
+	err = col.Save(&jstore.DataItem{ID: "1234"})
 	suite.Nil(err)
 
-	err = col.Save(&jstore.Item{ ID:"efgh"})
+	err = col.Save(&jstore.DataItem{ID: "efgh"})
 	suite.Nil(err)
 
-	err = col.Save(&jstore.Item{ ID:"abcd"})
+	err = col.Save(&jstore.DataItem{ID: "abcd"})
 	suite.Nil(err)
 
-	err = col.Save(&jstore.Item{ ID:"abcd"})
+	err = col.Save(&jstore.DataItem{ID: "abcd"})
 	suite.Nil(err)
 
 	err = col.Delete("efgh")
@@ -47,12 +47,11 @@ func (suite *StoreTestSuite) TestCollection() {
 	col2, err := jstore.NewCollection("./test.data.json")
 	suite.Nil(err)
 
-	suite.True( col2.Exists("1234") )
-	suite.True( col2.Exists("abcd") )
-	suite.False( col2.Exists("efgh") )
+	suite.True(col2.Exists("1234"))
+	suite.True(col2.Exists("abcd"))
+	suite.False(col2.Exists("efgh"))
 
 	suite.Equal(3, len(col2.GetAll()))
 
 	suite.Equal("abcd", col2.Get("abcd").ID)
 }
-

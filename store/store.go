@@ -1,4 +1,4 @@
-package jstore
+package store
 
 import (
 	"encoding/json"
@@ -14,20 +14,16 @@ func NewCollection(path string) (*Collection, error) {
 	return &data, err
 }
 
-type Item struct {
-	ID string
-}
-
 type Collection struct {
 	path  string
-	pull  map[string]*Item
-	order []Item
+	pull  map[string]*DataItem
+	order []DataItem
 }
 
-func (c *Collection) Get(id string) *Item {
+func (c *Collection) Get(id string) *DataItem {
 	item, ok := c.pull[id]
 	if !ok {
-		return &Item{}
+		return &DataItem{}
 	}
 
 	return item
@@ -38,11 +34,11 @@ func (c *Collection) Exists(id string) bool {
 	return ok
 }
 
-func (c *Collection) GetAll() []Item {
+func (c *Collection) GetAll() []DataItem {
 	return c.order
 }
 
-func (c *Collection) Save(obj *Item) error {
+func (c *Collection) Save(obj *DataItem) error {
 	index := -1
 	if obj.ID == "" {
 		obj.ID = xid.New().String()
@@ -84,8 +80,8 @@ func (c *Collection) indexOf(key string) int {
 }
 
 func (c *Collection) loadFromFile() error {
-	c.order = make([]Item, 0)
-	c.pull = make(map[string]*Item)
+	c.order = make([]DataItem, 0)
+	c.pull = make(map[string]*DataItem)
 
 	bytes, err := ioutil.ReadFile(c.path)
 	if err != nil {
