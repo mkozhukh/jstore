@@ -1,10 +1,11 @@
+// generated with https://github.com/mkozhukh/jstore
+// jstore DataItem store/target.go
+
 package store
 
 import (
 	"encoding/json"
 	"io/ioutil"
-
-	"github.com/rs/xid"
 )
 
 func NewCollection(path string) (*Collection, error) {
@@ -16,11 +17,18 @@ func NewCollection(path string) (*Collection, error) {
 
 type Collection struct {
 	path  string
-	pull  map[string]*DataItem
+	pull  map[uint]*DataItem
 	order []DataItem
+
+	counter uint
 }
 
-func (c *Collection) Get(id string) *DataItem {
+type storeDataItemFormat struct {
+	Order   []DataItem
+	Counter uint
+}
+
+func (c *Collection) Get(id uint) *DataItem {
 	item, ok := c.pull[id]
 	if !ok {
 		return &DataItem{}
@@ -29,7 +37,7 @@ func (c *Collection) Get(id string) *DataItem {
 	return item
 }
 
-func (c *Collection) Exists(id string) bool {
+func (c *Collection) Exists(id uint) bool {
 	_, ok := c.pull[id]
 	return ok
 }
@@ -38,10 +46,23 @@ func (c *Collection) GetAll() []DataItem {
 	return c.order
 }
 
+type DataItemLocator func(*DataItem) bool
+
+func (c *Collection) First(loc DataItemLocator) *DataItem {
+	for i := range c.order {
+		if loc(&c.order[i]) {
+			return &c.order[i]
+		}
+	}
+
+	return &DataItem{}
+}
+
 func (c *Collection) Save(obj *DataItem) error {
 	index := -1
-	if obj.ID == "" {
-		obj.ID = xid.New().String()
+	if obj.ID == 0 {
+		c.counter++
+		obj.ID = c.counter
 	} else {
 		index = c.indexOf(obj.ID)
 	}
@@ -57,7 +78,7 @@ func (c *Collection) Save(obj *DataItem) error {
 	return c.saveToFile()
 }
 
-func (c *Collection) Delete(id string) error {
+func (c *Collection) Delete(id uint) error {
 	index := c.indexOf(id)
 	if index == -1 {
 		return nil
@@ -69,7 +90,7 @@ func (c *Collection) Delete(id string) error {
 	return c.saveToFile()
 }
 
-func (c *Collection) indexOf(key string) int {
+func (c *Collection) indexOf(key uint) int {
 	for i := range c.order {
 		if c.order[i].ID == key {
 			return i
@@ -80,19 +101,21 @@ func (c *Collection) indexOf(key string) int {
 }
 
 func (c *Collection) loadFromFile() error {
-	c.order = make([]DataItem, 0)
-	c.pull = make(map[string]*DataItem)
+	c.pull = make(map[uint]*DataItem)
 
 	bytes, err := ioutil.ReadFile(c.path)
 	if err != nil {
 		return err
 	}
 
-	err = json.Unmarshal(bytes, &c.order)
+	temp := storeDataItemFormat{}
+	err = json.Unmarshal(bytes, &temp)
 	if err != nil {
 		return err
 	}
 
+	c.order = temp.Order
+	c.counter = temp.Counter
 	for i := range c.order {
 		c.pull[c.order[i].ID] = &c.order[i]
 	}
@@ -101,7 +124,11 @@ func (c *Collection) loadFromFile() error {
 }
 
 func (c *Collection) saveToFile() error {
-	bytes, err := json.Marshal(c.order)
+	bytes, err := json.Marshal(storeDataItemFormat{
+		Order:   c.order,
+		Counter: c.counter,
+	})
+
 	if err != nil {
 		return err
 	}

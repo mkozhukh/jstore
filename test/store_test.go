@@ -29,29 +29,36 @@ func (suite *StoreTestSuite) TestCollection() {
 	suite.Nil(err)
 	suite.NotEqual("", item.ID)
 
-	err = col.Save(&jstore.DataItem{ID: "1234"})
+	err = col.Save(&jstore.DataItem{ID: 1})
 	suite.Nil(err)
 
-	err = col.Save(&jstore.DataItem{ID: "efgh"})
+	err = col.Save(&jstore.DataItem{ID: 2})
 	suite.Nil(err)
 
-	err = col.Save(&jstore.DataItem{ID: "abcd"})
+	err = col.Save(&jstore.DataItem{ID: 3})
 	suite.Nil(err)
 
-	err = col.Save(&jstore.DataItem{ID: "abcd"})
+	err = col.Save(&jstore.DataItem{ID: 4})
 	suite.Nil(err)
 
-	err = col.Delete("efgh")
+	err = col.Delete(2)
 	suite.Nil(err)
 
 	col2, err := jstore.NewCollection("./test.data.json")
 	suite.Nil(err)
 
-	suite.True(col2.Exists("1234"))
-	suite.True(col2.Exists("abcd"))
-	suite.False(col2.Exists("efgh"))
+	suite.True(col2.Exists(1))
+	suite.True(col2.Exists(3))
+	suite.True(col2.Exists(4))
+	suite.False(col2.Exists(2))
+
+	suite.True(col.Exists(1))
+	suite.True(col.Exists(3))
+	suite.True(col.Exists(4))
+	suite.False(col.Exists(2))
 
 	suite.Equal(3, len(col2.GetAll()))
+	suite.Equal(3, len(col.GetAll()))
 
-	suite.Equal("abcd", col2.Get("abcd").ID)
+	suite.Equal(uint(3), col2.Get(3).ID)
 }
